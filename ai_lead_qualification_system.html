@@ -1,0 +1,182 @@
+
+<h2 class="sr-only">AI Lead Qualification System — filter, score, and qualify sales leads automatically</h2>
+
+<style>
+  .lqs-wrap { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .lqs-header { margin-bottom: 1.5rem; }
+  .lqs-title { font-size: 20px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+  .lqs-sub { font-size: 14px; color: var(--color-text-secondary); margin: 0; }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
+  .metric-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
+  .metric-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
+  .metric-val.green { color: #3B6D11; }
+  .metric-val.amber { color: #BA7517; }
+  .metric-val.red { color: #A32D2D; }
+  .filters { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: 13px; color: var(--color-text-secondary); }
+  .pill { padding: 5px 14px; border-radius: 999px; border: 0.5px solid var(--color-border-secondary); font-size: 13px; cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
+  .pill.active { background: #185FA5; color: #E6F1FB; border-color: #185FA5; }
+  .pill:hover:not(.active) { background: var(--color-background-secondary); }
+  .search-box { margin-left: auto; }
+  .search-box input { padding: 5px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 13px; background: var(--color-background-primary); color: var(--color-text-primary); width: 180px; }
+  .table-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  thead { background: var(--color-background-secondary); }
+  th { padding: 10px 14px; text-align: left; font-weight: 500; color: var(--color-text-secondary); font-size: 12px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  td { padding: 11px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--color-background-secondary); }
+  .score-bar { display: flex; align-items: center; gap: 8px; }
+  .bar-bg { flex: 1; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .score-num { font-size: 12px; font-weight: 500; min-width: 28px; text-align: right; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .badge-hot { background: #FCEBEB; color: #A32D2D; }
+  .badge-warm { background: #FAEEDA; color: #854F0B; }
+  .badge-cold { background: #E6F1FB; color: #185FA5; }
+  .badge-qualified { background: #EAF3DE; color: #3B6D11; }
+  .badge-review { background: #FAEEDA; color: #854F0B; }
+  .badge-disqualified { background: #F1EFE8; color: #5F5E5A; }
+  .source-tag { font-size: 11px; color: var(--color-text-secondary); background: var(--color-background-secondary); padding: 2px 7px; border-radius: 4px; }
+  .action-btn { padding: 4px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); font-size: 11px; cursor: pointer; background: transparent; color: var(--color-text-secondary); transition: all 0.15s; }
+  .action-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .empty { text-align: center; padding: 2rem; color: var(--color-text-secondary); font-size: 14px; }
+  .col-name { width: 18%; }
+  .col-company { width: 16%; }
+  .col-source { width: 10%; }
+  .col-score { width: 18%; }
+  .col-status { width: 13%; }
+  .col-qualify { width: 13%; }
+  .col-action { width: 12%; }
+</style>
+
+<div class="lqs-wrap">
+  <div class="lqs-header">
+    <p class="lqs-title">AI Lead Qualification System</p>
+    <p class="lqs-sub">Filter, score, and qualify leads automatically</p>
+  </div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="filters">
+    <span class="filter-label">Filter:</span>
+    <button class="pill active" onclick="setFilter('all')">All</button>
+    <button class="pill" onclick="setFilter('hot')">Hot</button>
+    <button class="pill" onclick="setFilter('warm')">Warm</button>
+    <button class="pill" onclick="setFilter('cold')">Cold</button>
+    <button class="pill" onclick="setFilter('qualified')">Qualified</button>
+    <button class="pill" onclick="setFilter('disqualified')">Disqualified</button>
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Search name or company..." oninput="render()" />
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-name">Name</th>
+          <th class="col-company">Company</th>
+          <th class="col-source">Source</th>
+          <th class="col-score">AI Score</th>
+          <th class="col-status">Temperature</th>
+          <th class="col-qualify">Status</th>
+          <th class="col-action">Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const leads = [
+  { name: 'Sarah Johnson', company: 'TechNova Inc', source: 'LinkedIn', score: 91, temp: 'hot', status: 'qualified', budget: 50000, role: 'CTO' },
+  { name: 'Ahmed Al-Farsi', company: 'Gulf Dynamics', source: 'Referral', score: 87, temp: 'hot', status: 'qualified', budget: 80000, role: 'CEO' },
+  { name: 'Priya Sharma', company: 'DataSync', source: 'Website', score: 74, temp: 'warm', status: 'review', budget: 20000, role: 'VP Sales' },
+  { name: 'Marcus Lee', company: 'CloudBase', source: 'Webinar', score: 68, temp: 'warm', status: 'review', budget: 15000, role: 'Director' },
+  { name: 'Emily Chen', company: 'Fintech Pro', source: 'LinkedIn', score: 82, temp: 'hot', status: 'qualified', budget: 35000, role: 'CFO' },
+  { name: 'Omar Hassan', company: 'StartupX', source: 'Cold Email', score: 41, temp: 'cold', status: 'disqualified', budget: 2000, role: 'Founder' },
+  { name: 'Lisa Park', company: 'Retail Giant', source: 'Referral', score: 79, temp: 'warm', status: 'review', budget: 25000, role: 'CMO' },
+  { name: 'James Wright', company: 'OldCorp Ltd', source: 'Cold Email', score: 28, temp: 'cold', status: 'disqualified', budget: 500, role: 'Manager' },
+  { name: 'Ana Rodriguez', company: 'HealthAI', source: 'Website', score: 93, temp: 'hot', status: 'qualified', budget: 70000, role: 'CEO' },
+  { name: 'Kevin Patel', company: 'EduTech', source: 'Webinar', score: 55, temp: 'warm', status: 'review', budget: 8000, role: 'Head of IT' },
+];
+
+let currentFilter = 'all';
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+function getBarColor(score) {
+  if (score >= 80) return '#639922';
+  if (score >= 60) return '#BA7517';
+  return '#A32D2D';
+}
+
+function getTempBadge(temp) {
+  const map = { hot: 'badge-hot', warm: 'badge-warm', cold: 'badge-cold' };
+  const labels = { hot: 'Hot', warm: 'Warm', cold: 'Cold' };
+  return `<span class="badge ${map[temp]}">${labels[temp]}</span>`;
+}
+
+function getStatusBadge(status) {
+  const map = { qualified: 'badge-qualified', review: 'badge-review', disqualified: 'badge-disqualified' };
+  const labels = { qualified: 'Qualified', review: 'Review', disqualified: 'Disqualified' };
+  return `<span class="badge ${map[status]}">${labels[status]}</span>`;
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const filtered = leads.filter(l => {
+    const matchFilter = currentFilter === 'all' || l.temp === currentFilter || l.status === currentFilter;
+    const matchSearch = l.name.toLowerCase().includes(search) || l.company.toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+
+  const tbody = document.getElementById('tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">No leads match this filter.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = filtered.map(l => `
+      <tr>
+        <td><span style="font-weight:500">${l.name}</span><br><span style="font-size:11px;color:var(--color-text-secondary)">${l.role}</span></td>
+        <td>${l.company}</td>
+        <td><span class="source-tag">${l.source}</span></td>
+        <td>
+          <div class="score-bar">
+            <div class="bar-bg"><div class="bar-fill" style="width:${l.score}%;background:${getBarColor(l.score)}"></div></div>
+            <span class="score-num" style="color:${getBarColor(l.score)}">${l.score}</span>
+          </div>
+        </td>
+        <td>${getTempBadge(l.temp)}</td>
+        <td>${getStatusBadge(l.status)}</td>
+        <td><button class="action-btn" onclick="sendPrompt('Tell me more about lead ${l.name} from ${l.company} with score ${l.score}')">Analyze ↗</button></td>
+      </tr>
+    `).join('');
+  }
+
+  updateMetrics(filtered);
+}
+
+function updateMetrics(filtered) {
+  const total = filtered.length;
+  const qualified = filtered.filter(l => l.status === 'qualified').length;
+  const avgScore = total ? Math.round(filtered.reduce((a,l) => a+l.score, 0) / total) : 0;
+  const hot = filtered.filter(l => l.temp === 'hot').length;
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><p class="metric-label">Total leads</p><p class="metric-val">${total}</p></div>
+    <div class="metric"><p class="metric-label">Qualified</p><p class="metric-val green">${qualified}</p></div>
+    <div class="metric"><p class="metric-label">Avg AI score</p><p class="metric-val ${avgScore>=70?'green':avgScore>=50?'amber':'red'}">${avgScore}</p></div>
+    <div class="metric"><p class="metric-label">Hot leads</p><p class="metric-val amber">${hot}</p></div>
+  `;
+}
+
+render();
+</script>
